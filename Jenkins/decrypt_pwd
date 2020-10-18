@@ -1,0 +1,3 @@
+Open script console in Jenkins
+<Jenkins_Url>/script and Execute the below in the console
+println(hudson.util.Secret.decrypt("{AQAAABAAAAAQsbdfadfewr123qfdsaagw4r2r3wegasdvADSDFFQRR}"))
