@@ -1,1 +1,1 @@
-#Rate limit : curl -H "Authorization: token " https://api.github.com/rate_limit
+#Rate limit : curl -H "Authorization: <TOKEN>" https://api.github.com/rate_limit
