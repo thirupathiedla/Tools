@@ -1,0 +1,380 @@
+Assume my details on jenkins are below , from here on will use them instead of the complete url
+
+jenkins_url="https://myjenkins.com:8080"
+jenkins_user="test@jenkins.com"
+
+jenkins_pwd="abckjskdahnqwekpjnakjdajhdbasd" ( This the same auth token we created/copied earlier )
+1. List all Jobs
+
+jenkins_url + /api/json
+
+Via curl
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} https://${jenkins_url}/api/json
+ (You can use /api/xml for xml format) ( -s in curl is to run in silent mode , remove it when debugging)
+
+You can filter the required data you want using tree
+
+jenkins_url + /api/json?tree=jobs[name,color,buildable]
+
+Via Curl
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} https://${jenkins_url}/api/json?tree=jobs[name,color,buildable]
+
+2. Get/READ Job configuration Ex: 'TEST'
+
+jenkins_url + /job/job_name/config.xml
+
+
+Via curl
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/config.xml" > config.xml 
+
+(You can redirect the result to a file and store it as a backup or use it as a template for creating new jobs)
+
+3. Create New Job : Job Name 'TEST' ( We will be using 'TEST' job for most of the examples when referring to job name)
+
+jenkins_url + /createItem?name=job_name
+
+
+Via curl (Use xml configuration )
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} -H "Content-Type:application/xml" -d "<project><builders/><publishers/><buildWrappers/></project>" "${jenkins_url}/createItem?name=TEST"
+
+
+Via curl using config.xml of a jenkins job created above
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} -H "Content-Type:application/xml" -d @config.xml "${jenkins_url}/createItem?name=NEW_TEST"
+
+If you want to create the job in a specific view
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} -H "Content-Type:application/xml" -d @config.xml "${jenkins_url}/view/viewName/createItem?name=job_name"
+4. Create a New job from another (Copy Jenkins Job)
+
+jenkins_url + /createItem?name=NEWJOBNAME&mode=copy&from=FROMJOBNAME
+
+
+via curl
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} -H "Content-Type:application/xml" "${jenkins_url}/createItem?name=NEWJOBNAME&mode=copy&from=FROMJOBNAME"
+5. Delete Jenkins Job (Ex : TEST job which we created in 3"
+
+jenkins_url + /job/job_name/doDelete
+
+via curl
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/doDelete"
+
+6. Verify Job Exists or not
+
+jenkins_url + /checkJobName?value=job_name
+
+via curl
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/checkJobName?value=TEST"
+
+7. Start A build
+
+jenkins_url + /job/job_name/build
+
+via curl 
+
+Start build without parameters
+
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/build"
+
+
+Start build with parameters
+
+jenkins_url + /job/job_name/buildWithParameters?Parameter1=Value1
+
+
+via curl (paramter is 'input' and value is 'ok' )
+
+
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/buildWithParameters?input=ok"
+
+
+Build a job with some delay
+
+jenkins_url + /job/TEST/build?delay=20sec
+
+via curl
+
+
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/build?delay=20sec"
+
+8. Get Build Status
+
+For a specific build
+
+jenkins_url + /job/job_name/build_number/api/json
+
+
+(Note , you have a lot of data in the result , you can identify what you need and automate stuff , ex information such as build result, test result,changes,culprits,upstreamproject etc)
+
+via curl
+
+
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/5/api/json"
+
+
+Curl command for below apis are same 
+
+
+For Last build
+
+
+jenkins_url + /job/job_name/lastBuild/api/json
+
+
+For Last Completed build
+
+
+jenkins_url + /job/job_name/lastCompletedBuild/api/json
+
+
+For Last successful build
+
+
+jenkins_url + /job/job_name/lastSuccessfulBuild/api/json
+
+
+For Last failed build
+
+
+jenkins_url + /job/job_name/lastFailedBuild/api/json
+
+9. To Filter Build result to required key sections you want
+
+Use can pipe the result of the output fetched using above urls to the python command
+
+Ex: If we want result of a build
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/lastSuccessfulBuild/api/json" | python -c 'import json,sys,os;obj=json.load(sys.stdin);print obj["result"]')
+Controlling the amount of data you fetch
+
+The tree query parameter allows you to explicitly specify and retrieve only the information you are looking for, by using an XPath-ish path expression.
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/lastSuccessfulBuild/api/json\?tree\=number,building,result,timestamp"
+10. Delete Jenkins Build
+
+jenkins_url + /job/job_name/build_number/doDelete
+
+via curl
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/5/doDelete"
+
+
+To delet multiple builds at once
+
+
+jenkins_url + /job/job_name/[buildnumberfrom-buildnumberto]/doDelete
+
+
+via curl
+
+
+
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/[1-3]/doDelete"
+11. Stop A build
+
+jenkins_url + /job/job_name/build_number/stop
+
+
+via curl
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/5/stop"
+12. Check Queued Builds
+
+jenkins_url + /queue/api/json
+
+
+via curl
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/queue/api/json"
+13. Cancel Builds in queue
+
+jenkins_url + /queue/cancelItem?id=queue_id_of_the_build
+
+via curl
+
+curl -X POST -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/queue/cancelItem?id=266229"
+14. Download Console output
+
+jenkins_url + /job/job_name/build_number/consoleText
+
+via curl
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/9/consoleText" (you can redirect the output to a file using > filename.txt )
+15. Download the build artifacts
+
+jenkins_url + /job/job_name/build_number/artifact/*zip*/artifact.zip
+
+via curl
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/lastSuccessfulBuild/artifact/*zip*/artifact.zip"
+
+16. Find the changes from previous build (Change Set)
+
+jenkins_url + /job/build_number/api/json?tree=changeSet[*[*]] (To Get complete list )
+
+via curl
+
+
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/9/api/json?tree=changeSet[*[*]]"
+
+
+Use nested square braces for specific sub-subproperties, e.g.:
+
+
+
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/9/api/json?tree=changeSet[*[affectedPaths]]"
+17. To store certain builds of a jenkins job and vice versa
+
+If you are using Log rotation plugin (in case not , you should do so to boost your jenkins performance). This plugin helps you to automatically delete builds on pre-defined criteria However , you have a option to override it and save certain builds or delete the saved builds when you do not need them anymore
+
+jenkins_url + /job/job_name/build_number/toggleLogKeep
+
+via curl
+
+curl -X POST -u jenkins:${jenkins_pwd} "${jenkins_url}/job/TEST/9/toggleLogKeep"
+
+Note :  (toggleLogKeep is like a on-off switch , on first run it mark the build to be saved , on second run it remove that mark)
+
+Tip : You can use 'depth' in search to increase/decrease the output displayed and use pretty to mark it look like json in browser
+
+ex: jenkins_url + api/json?depth=3&pretty
+18. To find the injected properties of your build
+
+jenkins_url + /job/job_name/build_number/injectedEnvVars/api/json
+
+via curl
+
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/job/TEST/9/injectedEnvVars/api/json?depth=2&pretty"
+
+19. Get Jenkins Plugin information
+
+jenkins_url + api/json?pretty=1&tree=plugins[shortName,longName,version]
+
+via curl
+
+curl -X GET -s -u ${jenkins_user}:${jenkins_pwd} "${jenkins_url}/pluginManager/api/json?pretty=1&tree=plugins\[shortName,longName,version\]"
+Note (curl requires backslash-escaped square-brackets inside double-quotes)
+
+Node Level Apis
+20. To mark a node offline
+
+jenkins_url + computer/node_name/toggleOffline
+
+via curl
+
+curl -X POST -u jenkins:${jenkins_pwd} "${jenkins_url}/computer/node1/toggleOffline"
+21. To Disconnect a node
+
+jenkins_url + computer/node_name/doDisconnect?offlineMessage=message
+
+via curl
+
+curl -X POST -u jenkins:${jenkins_pwd} "${jenkins_url}/computer/node1/doDisconnect?offlineMessage=see_your_after_rebirth"
+22. To Reconnect a node
+
+jenkins_url + computer/node_name/launchSlaveAgent
+
+via curl
+
+curl -X POST -u jenkins:${jenkins_pwd} "${jenkins_url}/computer/node1/launchSlaveAgent"
+23. To find a slave is ideal or busy
+
+jenkins_url + computer/node_name/api/json
+
+via curl , we append a python query to get exact number
+
+
+curl -X GET -u jenkins:${jenkins_pwd} "${jenkins_url}/computer/node1/api/json" | python -c 'import json,sys,os;obj=json.load(sys.stdin);print obj["idle"]'
+
+24. To find queue length
+
+jenkins_url + /queue/api/json
+
+
+via curl
+
+
+curl -X GET -u jenkins:${jenkins_pwd} "${jenkins_url}/queue/api/json" | python -c 'import json,sys,os;obj=json.load(sys.stdin);print (len(obj["items"]))'
+
+25. Jenkins Server Level Operations
+jenkins_url + /quietDown (quietDown: Put Jenkins in a Quiet mode, in preparation for a restart. In that mode Jenkins don’t start any build)
+
+
+via curl
+
+curl -X POST -u jenkins:${jenkins_pwd} "${jenkins_url}/quietDown"
+
+curl command invocation is same for below apis , so ignoring curl part
+
+
+
+jenkins_url + /restart (stop/start Jenkins and abort all running job not waiting)
+
+jenkins_url + /safeRestart (safeRestart: Puts Jenkins into the quiet mode, wait for existing builds to be completed, and then restart Jenkins)
+
+jenkins_url + /exit (Shutdown Jenkins and abort all running job)
+
+jenkins_url + /safeExit (safeExit: Puts Jenkins into the quiet mode, wait for existing builds to be completed, and then shut down Jenkins)
+
+jenkins_url + /cancelQuietDown (cancelQuietDown: Cancel the effect of the “quiet-down” command)
+
+jenkins_url + /reload (To reload the configuration changes)
+
+26. Pipelines Rest Apis
+Get a single Workflow run.
+
+jenkins_url + /job/job_name/build_number/wfapi/describe
+
+
+via curl 
+
+curl -X GET -u jenkins:${jenkins_pwd} "${jenkins_url}/job/TEST/9/wfapi/describe"
+
+27. Get the build artifacts for a Pipeline run.
+
+jenkins_url + /job/job_name/build_number/wfapi/artifacts
+
+
+via curl
+
+
+curl -X GET -u jenkins:${jenkins_pwd} "${jenkins_url}/job/TEST/9/wfapi/artifacts"
+28. GET Pipeline job run History.
+
+jenkins_url + /job/job_name/wfapi/runs
+
+
+via curl
+
+curl -X GET -u jenkins:${jenkins_pwd} "${jenkins_url}/job/TEST/wfapi/runs"
+29. GET Pipeline job description.
+
+jenkins_url + /job/job_name/wfapi/
+
+
+via curl
+
+curl -X GET -u jenkins:${jenkins_pwd} "${jenkins_url}/job/TEST/wfapi/"
+30. Get the pending input action details for a Pipeline run.
+
+jenkins_url + /job/job_name/build_number/wfapi/pendingInputActions
+
+
+via curl
+
+curl -X GET -u jenkins:${jenkins_pwd} "${jenkins_url}/job/TEST/9/wfapi/pendingInputActions"
