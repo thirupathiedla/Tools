@@ -1,0 +1,11 @@
+Teams:
+Documentation: https://docs.github.com/en/free-pro-team@latest/rest/reference/teams
+Command used : curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <TOKEN>" https://api.github.com/orgs/<ORG>>/teams
+
+Team Members:
+Documentation: https://docs.github.com/en/free-pro-team@latest/rest/reference/teams#list-team-members
+Command used : curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <TOKEN>" https://api.github.com/orgs/<ORG>>/teams/<team_slug>/members
+
+Organization Members:
+Documentation: https://docs.github.com/en/free-pro-team@latest/rest/reference/orgs#list-organization-members
+Command used : curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <TOKEN>" https://api.github.com/orgs/<ORG>>/members
