@@ -1,0 +1,93 @@
+import json
+import os,sys
+import subprocess
+from datetime import datetime,timedelta
+
+def execute_shell_cmd(command=""):
+    """
+    To execute Gerrit/shell command and return output.
+    :param command: Command to be executed
+    :return: output of the gerrit/shell command.
+    """
+
+    print("Command: \'%s\' " % (command))
+    cmd = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+    print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+    (output, err) = cmd.communicate()
+    print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+    #logging.error(output)
+    if cmd.returncode != 0:
+        logging.error("Return code of executed command : %s" % (str(cmd.returncode)))
+    #print("std-out: %s" % (output))
+    if err is not None:
+        logging.error("std-err: %s" % (err))
+
+    output = output.decode("utf-8")
+    return output[:-1]
+
+page_num = 1
+org_teams_list=[]
+teams_members={}
+while True:
+    curl_command='curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <TOKEN>" https://api.github.com/orgs/<ORG>/teams?page=%s'%page_num
+    teams_response = execute_shell_cmd(command=curl_command)
+    teams_list = json.loads(teams_response)
+    if len(teams_list) == 0:
+        break
+    for team in teams_list:
+        team_mem_pg_no = 1
+        members = []
+        while True:
+            curl_command='curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <TOKEN>" https://api.github.com/orgs/<ORG>/teams/%s/members?page=%s'%(team['slug'],team_mem_pg_no)
+            teams_response_1 = execute_shell_cmd(command=curl_command)
+            teams_list_1 = json.loads(teams_response_1)
+            if len(teams_list_1) == 0:
+                break
+            for item in teams_list_1:
+                print(item)
+                members.append(item['login'])
+            team_mem_pg_no += 1
+        teams_members[team['name']]=members
+        print()
+        team_details="%s | %s"%(team['name'], team['name'] )
+        print(team_details)
+        org_teams_list.append(team_details)
+    page_num += 1
+
+
+page_num = 1
+org_users_list={}
+while True:
+    curl_command='curl -H "Accept: application/vnd.github.groot-preview+json" -H "Authorization: token <TOKEN>" https://api.github.com/orgs/<ORG>/members?page=%s&per_page=100'%page_num
+    curl_command='curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token <TOKEN>" https://api.github.com/orgs/<ORG>/members?page=%s&per_page=100'%page_num
+    users_list_response = execute_shell_cmd(command=curl_command)
+    users_list = json.loads(users_list_response)
+    if len(users_list) == 0:
+        break
+    for user in users_list:
+        user_groups=[]
+        user=user['login']
+        for key,value in teams_members.items():
+            if user in value:
+                user_groups.append(key)
+        org_users_list[user]=user_groups
+    page_num += 1
+
+print("*"*100)
+print("*"*100)
+print(org_teams_list)
+print("Total Teams:%s"%(len(org_teams_list)))
+print("*"*100)
+print("*"*100)
+for key,value in teams_members.items():
+    print("%s:%s:%s"%(key,len(value),(",").join(value)))
+
+print("*"*100)
+print("*"*100)
+
+print(org_users_list)
+print(len(org_users_list))
+print("*"*100)
+print("*"*100)
+for key,value in org_users_list.items():
+    print("%s:%s:%s"%(key,len(value),(",").join(value)))
